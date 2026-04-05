@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Dartech — Complete Your Payment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0f1e;
+      --surface:   #111827;
+      --surface2:  #1a2235;
+      --border:    #1e2d45;
+      --accent:    #3b82f6;
+      --accent-glow: rgba(59,130,246,0.25);
+      --success:   #22c55e;
+      --danger:    #ef4444;
+      --warning:   #f59e0b;
+      --text:      #f1f5f9;
+      --muted:     #64748b;
+      --radius:    14px;
+      --transition: 0.2s ease;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 0 0 env(safe-area-inset-bottom, 20px);
+    }
+
+    /* ─── Loading Screen ────────────────────────────────────── */
+    #loading-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px; z-index: 100;
+      transition: opacity 0.4s ease;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .logo-mark {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 700; color: white;
+      animation: pulse-glow 2s infinite;
+      box-shadow: 0 0 30px var(--accent-glow);
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+      50%       { box-shadow: 0 0 50px rgba(59,130,246,0.5); }
+    }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Error State ───────────────────────────────────────── */
+    #error-screen {
+      display: none;
+      min-height: 100vh;
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      padding: 24px; text-align: center;
+    }
+    #error-screen.visible { display: flex; }
+    .error-icon { font-size: 48px; }
+    .error-title { font-size: 20px; font-weight: 600; }
+    .error-msg { color: var(--muted); font-size: 14px; }
+
+    /* ─── Main Content ──────────────────────────────────────── */
+    #main { display: none; max-width: 480px; margin: 0 auto; padding: 20px 16px 32px; }
+    #main.visible { display: block; }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 20px 0 24px;
+    }
+    .header-logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 700; color: white; flex-shrink: 0;
+    }
+    .header-info h1 { font-size: 18px; font-weight: 700; }
+    .header-info p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 99px;
+      font-size: 12px; font-weight: 500;
+    }
+    .status-badge.pending     { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .status-badge.under_review{ background: rgba(59,130,246,0.15);  color: var(--accent);  }
+    .status-badge.approved    { background: rgba(34,197,94,0.15);   color: var(--success); }
+    .status-badge.rejected    { background: rgba(239,68,68,0.15);   color: var(--danger);  }
+    .badge-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor;
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.3; } }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .card-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    /* Amount block */
+    .amount-display {
+      display: flex; align-items: baseline; gap: 6px;
+      margin-bottom: 8px;
+    }
+    .amount-big { font-size: 42px; font-weight: 700; line-height: 1; }
+    .amount-currency { font-size: 22px; font-weight: 500; color: var(--muted); }
+    .amount-note { font-size: 13px; color: var(--muted); }
+
+    /* InstaPay info */
+    .instapay-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 10px;
+    }
+    .instapay-row:last-child { margin-bottom: 0; }
+    .instapay-label { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+    .instapay-value { font-size: 14px; font-weight: 600; }
+
+    /* Copy button */
+    .copy-btn {
+      background: var(--accent); border: none; color: white;
+      padding: 6px 12px; border-radius: 7px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: var(--transition); white-space: nowrap; flex-shrink: 0;
+    }
+    .copy-btn:active { transform: scale(0.95); }
+    .copy-btn.copied { background: var(--success); }
+
+    /* Reference block */
+    .reference-block {
+      background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1));
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 12px; padding: 16px;
+      text-align: center;
+    }
+    .reference-label { font-size: 11px; color: var(--accent); font-weight: 600;
+                        letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+    .reference-code  { font-size: 28px; font-weight: 700; letter-spacing: 0.15em;
+                        color: white; font-family: 'Courier New', monospace; }
+    .reference-note  { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+    /* Steps */
+    .steps { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .step  { display: flex; gap: 12px; align-items: flex-start; }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .step-text { font-size: 13px; color: var(--muted); padding-top: 4px; line-height: 1.5; }
+    .step-text strong { color: var(--text); }
+
+    /* ─── Form ──────────────────────────────────────────────── */
+    .form-section { margin-top: 8px; }
+    .form-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .form-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600;
+                   color: var(--muted); margin-bottom: 6px; }
+    .field input {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: inherit; font-size: 14px;
+      padding: 12px 14px; outline: none;
+      transition: border-color var(--transition);
+      -webkit-appearance: none;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .field input::placeholder { color: var(--muted); opacity: 0.7; }
+
+    /* File upload */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px; padding: 28px 16px;
+      text-align: center; cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.05);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-icon { font-size: 32px; margin-bottom: 10px; }
+    .upload-text { font-size: 13px; font-weight: 500; }
+    .upload-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Preview */
+    #image-preview {
+      display: none; margin-top: 12px;
+      position: relative; border-radius: 10px; overflow: hidden;
+    }
+    #image-preview img {
+      width: 100%; border-radius: 10px;
+      max-height: 200px; object-fit: cover; display: block;
+    }
+    #remove-image {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(0,0,0,0.7); border: none; color: white;
+      width: 28px; height: 28px; border-radius: 50%;
+      font-size: 16px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      border: none; border-radius: 12px; color: white;
+      font-family: inherit; font-size: 15px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.02em;
+      transition: var(--transition);
+      box-shadow: 0 4px 24px rgba(59,130,246,0.35);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 8px;
+    }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 12px 20px; border-radius: 99px;
+      font-size: 13px; font-weight: 500; white-space: nowrap;
+      transition: transform 0.3s ease; z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--success); color: var(--success); }
+    #toast.error   { border-color: var(--danger);  color: var(--danger);  }
+
+    /* Already submitted state */
+    .already-submitted {
+      text-align: center; padding: 40px 24px;
+    }
+    .already-submitted .icon { font-size: 48px; margin-bottom: 16px; }
+    .already-submitted h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .already-submitted p  { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="loading-screen">
+    <div class="logo-mark">D</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-screen">
+    <div class="error-icon">⚠️</div>
+    <div class="error-title">Something went wrong</div>
+    <div class="error-msg" id="error-text">Unable to load payment details.</div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-logo">D</div>
+      <div class="header-info">
+        <h1>Dartech</h1>
+        <p>Smart Home AI Assistant</p>
+      </div>
+    </div>
+
+    <!-- Amount Card -->
+    <div class="card">
+      <div class="card-label">Monthly Subscription</div>
+      <div class="amount-display">
+        <span class="amount-currency">$</span>
+        <span class="amount-big" id="amount">20</span>
+        <span class="amount-currency">USD</span>
+      </div>
+      <div class="amount-note">One-time payment · Activates for 30 days</div>
+    </div>
+
+    <!-- InstaPay Info -->
+    <div class="card">
+      <div class="card-label">Pay via InstaPay</div>
+      <div class="instapay-row">
+        <div>
+          <div class="instapay-label">InstaPay Account</div>
+          <div class="instapay-value" id="instapay-account">Loading...</div>
+        </div>
+        <button class="copy-btn" id="copy-account-btn" onclick="copyText('instapay-account', 'copy-account-btn')">Copy</button>
+      </div>
+      <div class="instapay-row">
+        <div>
+          <div class="instapay-label">Account Holder</div>
+          <div class="instapay-value" id="instapay-holder">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reference Code -->
+    <div class="card">
+      <div class="card-label">Your Reference Code</div>
+      <div class="reference-block">
+        <div class="reference-label">📌 INCLUDE THIS IN YOUR TRANSFER</div>
+        <div class="reference-code" id="reference-code">DTX-XXXXXX</div>
+        <div class="reference-note">Add this code in the transfer note/description</div>
+      </div>
+      <br/>
+      <button class="copy-btn" style="width:100%;padding:10px;" id="copy-ref-btn" onclick="copyText('reference-code', 'copy-ref-btn')">
+        📋 Copy Reference Code
+      </button>
+    </div>
+
+    <!-- Steps -->
+    <div class="card">
+      <div class="card-label">How to Pay</div>
+      <ul class="steps">
+        <li class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Open InstaPay and send <strong>$20 USD</strong> to the account above</div>
+        </li>
+        <li class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">In the transfer note, write your <strong>reference code</strong></div>
+        </li>
+        <li class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Take a <strong>screenshot</strong> of the confirmation</div>
+        </li>
+        <li class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">Fill the form below and submit your proof</div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ── PROOF FORM ── -->
+    <div class="card form-section" id="form-section">
+      <div class="form-title">✅ Submit Payment Proof</div>
+      <div class="form-subtitle">Fill this after completing your InstaPay transfer</div>
+
+      <div class="field">
+        <label>Your Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Ahmed Mohamed" autocomplete="name" />
+      </div>
+
+      <div class="field">
+        <label>Last 4 Digits of Transaction ID</label>
+        <input type="tel" id="last4digits" placeholder="e.g. 4821" maxlength="4" pattern="\d{4}" inputmode="numeric" />
+      </div>
+
+      <div class="field">
+        <label>Transfer Time</label>
+        <input type="text" id="transfer-time" placeholder="e.g. 3:45 PM, Jan 5 2025" />
+      </div>
+
+      <div class="field">
+        <label>Payment Screenshot</label>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="proof-file" accept="image/*" capture="environment" />
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">Tap to upload screenshot</div>
+          <div class="upload-sub">JPG, PNG, WEBP — max 10MB</div>
+        </div>
+        <div id="image-preview">
+          <img id="preview-img" src="" alt="Preview" />
+          <button id="remove-image" onclick="removeImage()">✕</button>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="submit-btn" onclick="submitProof()">
+        <span id="btn-text">Submit Payment Proof</span>
+      </button>
+    </div>
+
+    <!-- Already submitted state (shown if status !== pending) -->
+    <div class="card already-submitted" id="already-submitted-section" style="display:none;">
+      <div class="icon" id="state-icon">⏳</div>
+      <h2 id="state-title">Under Review</h2>
+      <p id="state-msg">Your payment proof has been submitted and is being reviewed. You'll be notified once approved.</p>
+    </div>
+
+  </div><!-- #main -->
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    // ─── Config ─────────────────────────────────────────────
+    // Update this to your deployed backend URL
+    const API_BASE = 'https://your-backend.up.railway.app'; // ← CHANGE THIS
+
+    let paymentData = null;
+
+    // ─── Init ────────────────────────────────────────────────
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const payment_id = params.get('payment_id');
+
+      if (!payment_id) {
+        showError('No payment ID provided. Please return to the app.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/payment/${payment_id}`);
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Payment not found');
+        }
+
+        paymentData = json.payment;
+        renderPayment(paymentData);
+      } catch (err) {
+        showError(err.message || 'Failed to load payment. Please try again.');
+      }
+    }
+
+    // ─── Render ──────────────────────────────────────────────
+    function renderPayment(p) {
+      document.getElementById('amount').textContent      = p.amount;
+      document.getElementById('instapay-account').textContent = p.instapay_account;
+      document.getElementById('instapay-holder').textContent  = p.instapay_holder;
+      document.getElementById('reference-code').textContent   = p.reference;
+
+      // Show/hide form based on status
+      const formEl    = document.getElementById('form-section');
+      const stateEl   = document.getElementById('already-submitted-section');
+
+      if (p.status === 'pending') {
+        formEl.style.display  = 'block';
+        stateEl.style.display = 'none';
+      } else {
+        formEl.style.display  = 'none';
+        stateEl.style.display = 'block';
+        renderState(p.status);
+      }
+
+      // Hide loading, show main
+      document.getElementById('loading-screen').classList.add('hidden');
+      document.getElementById('main').classList.add('visible');
+    }
+
+    function renderState(status) {
+      const icon  = document.getElementById('state-icon');
+      const title = document.getElementById('state-title');
+      const msg   = document.getElementById('state-msg');
+
+      const states = {
+        under_review: { icon: '⏳', title: 'Under Review', msg: 'Your payment proof has been submitted and is being reviewed by our team. You will be notified once approved.' },
+        approved:     { icon: '✅', title: 'Payment Approved!', msg: 'Your subscription is now active. Go back to the Dartech app to start using your smart home assistant.' },
+        rejected:     { icon: '❌', title: 'Payment Rejected', msg: 'Unfortunately your payment could not be verified. Please contact support or try again with a clear screenshot.' },
+      };
+
+      const s = states[status] || states.under_review;
+      icon.textContent  = s.icon;
+      title.textContent = s.title;
+      msg.textContent   = s.msg;
+    }
+
+    // ─── Image upload preview ────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+
+      const fileInput  = document.getElementById('proof-file');
+      const uploadZone = document.getElementById('upload-zone');
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          document.getElementById('preview-img').src = ev.target.result;
+          document.getElementById('image-preview').style.display = 'block';
+          uploadZone.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Drag & drop
+      uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+      uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+      uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          fileInput.files = dt.files;
+          fileInput.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    function removeImage() {
+      document.getElementById('proof-file').value = '';
+      document.getElementById('image-preview').style.display = 'none';
+      document.getElementById('upload-zone').style.display = 'block';
+    }
+
+    // ─── Submit proof ─────────────────────────────────────────
+    async function submitProof() {
+      const name        = document.getElementById('name').value.trim();
+      const last4digits = document.getElementById('last4digits').value.trim();
+      const transferTime= document.getElementById('transfer-time').value.trim();
+      const fileInput   = document.getElementById('proof-file');
+      const file        = fileInput.files[0];
+
+      // Client-side validation
+      if (!name || name.length < 2)          return toast('Please enter your full name', 'error');
+      if (!/^\d{4}$/.test(last4digits))      return toast('Enter exactly 4 digits of your transaction ID', 'error');
+      if (!transferTime)                     return toast('Please enter the transfer time', 'error');
+      if (!file)                             return toast('Please upload your payment screenshot', 'error');
+
+      setLoading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append('payment_id', paymentData.id);
+        formData.append('name', name);
+        formData.append('last4digits', last4digits);
+        formData.append('transfer_time', transferTime);
+        formData.append('proof_image', file);
+
+        const res  = await fetch(`${API_BASE}/upload-proof`, { method: 'POST', body: formData });
+        const json = await res.json();
+
+        if (!res.ok || !json.success) throw new Error(json.error || 'Submission failed');
+
+        // Redirect to success page
+        window.location.href = `success.html?ref=${encodeURIComponent(paymentData.reference)}`;
+
+      } catch (err) {
+        toast(err.message || 'Something went wrong. Please try again.', 'error');
+        setLoading(false);
+      }
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────
+    function setLoading(on) {
+      const btn  = document.getElementById('submit-btn');
+      const text = document.getElementById('btn-text');
+      btn.disabled  = on;
+      text.textContent = on ? '⏳ Submitting...' : 'Submit Payment Proof';
+    }
+
+    function copyText(elementId, btnId) {
+      const text = document.getElementById(elementId).textContent.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById(btnId);
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+      }).catch(() => {
+        // Fallback for WebView environments
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Copied!', 'success');
+      });
+    }
+
+    let toastTimer;
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+    }
+
+    function showError(msg) {
+      document.getElementById('loading-screen').classList.add('hidden');
+      document.getElementById('error-screen').classList.add('visible');
+      document.getElementById('error-text').textContent = msg;
+    }
+  </script>
+</body>
+</html>

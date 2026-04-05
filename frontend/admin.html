@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dartech — Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0f1e;
+      --surface: #111827;
+      --surface2:#1a2235;
+      --border:  #1e2d45;
+      --accent:  #3b82f6;
+      --success: #22c55e;
+      --danger:  #ef4444;
+      --warning: #f59e0b;
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --radius:  12px;
+    }
+
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 14px; -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ─── Login Screen ─────────────────────────────────────── */
+    #login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; width: 100%; max-width: 380px;
+      text-align: center;
+    }
+    .login-logo {
+      width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 20px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 700; color: white;
+    }
+    .login-box h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .login-box p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+    .login-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px;
+      padding: 12px 16px; outline: none; margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%; padding: 13px; background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border: none; border-radius: 10px; color: white; font-family: inherit;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+    /* ─── Dashboard ────────────────────────────────────────── */
+    #dashboard { display: none; }
+    #dashboard.visible { display: block; }
+
+    /* Top nav */
+    .nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+    .nav-logo  {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 16px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 14px; }
+    .nav-badge {
+      background: rgba(239,68,68,0.15); color: var(--danger);
+      padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+    .logout-btn {
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: 13px;
+    }
+    .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Main container */
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+    /* Stats row */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+    }
+    .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+                  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+    .stat-num   { font-size: 32px; font-weight: 700; }
+    .stat-card.review  .stat-num { color: var(--warning); }
+    .stat-card.approved .stat-num { color: var(--success); }
+    .stat-card.rejected .stat-num { color: var(--danger);  }
+
+    /* Filters */
+    .toolbar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .toolbar h2 { font-size: 18px; font-weight: 700; flex: 1; }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border);
+      background: none; color: var(--muted); cursor: pointer; font-family: inherit;
+      font-size: 12px; font-weight: 500; transition: 0.15s;
+    }
+    .filter-btn:hover  { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .refresh-btn {
+      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: none; color: var(--text); cursor: pointer; font-family: inherit;
+      font-size: 12px;
+    }
+    .refresh-btn:hover { border-color: var(--accent); }
+
+    /* Payments list */
+    .payments-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .payment-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .payment-card.approved { border-left: 3px solid var(--success); }
+    .payment-card.rejected  { border-left: 3px solid var(--danger);  }
+    .payment-card.under_review { border-left: 3px solid var(--warning); }
+
+    .payment-header {
+      padding: 16px 20px; display: flex; align-items: center;
+      justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .payment-ref { font-size: 16px; font-weight: 700; font-family: monospace; letter-spacing: 0.05em; }
+    .payment-time{ font-size: 12px; color: var(--muted); }
+
+    .status-pill {
+      padding: 3px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .status-pill.pending      { background: rgba(100,116,139,0.15); color: var(--muted); }
+    .status-pill.under_review { background: rgba(245,158,11,0.15);  color: var(--warning); }
+    .status-pill.approved     { background: rgba(34,197,94,0.15);   color: var(--success); }
+    .status-pill.rejected     { background: rgba(239,68,68,0.15);   color: var(--danger);  }
+
+    .payment-body {
+      padding: 0 20px 20px;
+      display: grid; grid-template-columns: 1fr 200px;
+      gap: 16px; align-items: start;
+    }
+    @media (max-width: 600px) {
+      .payment-body { grid-template-columns: 1fr; }
+    }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .info-item label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
+    .info-item span  { font-size: 13px; font-weight: 500; }
+
+    /* Screenshot */
+    .screenshot-wrap { position: relative; }
+    .screenshot-wrap img {
+      width: 100%; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border); display: block;
+      transition: opacity 0.2s;
+    }
+    .screenshot-wrap img:hover { opacity: 0.85; }
+    .view-label {
+      text-align: center; font-size: 11px; color: var(--muted); margin-top: 6px;
+    }
+
+    /* Action buttons */
+    .actions {
+      display: flex; gap: 8px; margin-top: 14px;
+    }
+    .btn-approve, .btn-reject {
+      flex: 1; padding: 10px; border: none; border-radius: 9px;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: 0.15s;
+    }
+    .btn-approve { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+    .btn-approve:hover { background: var(--success); color: white; }
+    .btn-reject  { background: rgba(239,68,68,0.15); color: var(--danger);  border: 1px solid rgba(239,68,68,0.3); }
+    .btn-reject:hover  { background: var(--danger);  color: white; }
+    .btn-approve:disabled, .btn-reject:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 60px 24px; color: var(--muted);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+
+    /* Loading state */
+    .loading-state {
+      text-align: center; padding: 60px; color: var(--muted);
+    }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border);
+               border-top-color: var(--accent); border-radius: 50%;
+               animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Lightbox */
+    #lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.9); z-index: 1000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 100%; max-height: 90vh; border-radius: 10px;
+      object-fit: contain;
+    }
+    #lightbox-close {
+      position: absolute; top: 20px; right: 20px;
+      background: rgba(255,255,255,0.1); border: none; color: white;
+      width: 40px; height: 40px; border-radius: 50%; font-size: 20px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 12px 22px; border-radius: 99px; font-size: 13px; font-weight: 500;
+      white-space: nowrap; transition: transform 0.3s ease; z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--success); color: var(--success); }
+    #toast.error   { border-color: var(--danger);  color: var(--danger);  }
+
+    /* Reject modal */
+    #reject-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 200;
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    #reject-modal.open { display: flex; }
+    .modal-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; width: 100%; max-width: 400px;
+    }
+    .modal-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .modal-box p  { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .modal-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px;
+      padding: 10px 14px; outline: none; margin-bottom: 14px;
+    }
+    .modal-input:focus { border-color: var(--danger); }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-cancel {
+      flex: 1; padding: 11px; background: none; border: 1px solid var(--border);
+      border-radius: 9px; color: var(--muted); cursor: pointer; font-family: inherit;
+    }
+    .modal-confirm {
+      flex: 1; padding: 11px; background: var(--danger); border: none;
+      border-radius: 9px; color: white; cursor: pointer; font-family: inherit; font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── LOGIN SCREEN ── -->
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-logo">D</div>
+      <h1>Admin Dashboard</h1>
+      <p>Dartech Payment Verification Panel</p>
+      <input class="login-input" type="password" id="password-input"
+             placeholder="Enter admin password"
+             onkeydown="if(event.key==='Enter') login()" />
+      <button class="login-btn" onclick="login()">Sign In</button>
+      <div class="login-error" id="login-error"></div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD ── -->
+  <div id="dashboard">
+
+    <nav class="nav">
+      <div class="nav-brand">
+        <div class="nav-logo">D</div>
+        Dartech Admin
+      </div>
+      <div class="nav-right">
+        <span class="nav-badge" id="pending-count">0 pending</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </nav>
+
+    <div class="container">
+
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Payments</div>
+          <div class="stat-num" id="stat-total">—</div>
+        </div>
+        <div class="stat-card review">
+          <div class="stat-label">Under Review</div>
+          <div class="stat-num" id="stat-review">—</div>
+        </div>
+        <div class="stat-card approved">
+          <div class="stat-label">Approved</div>
+          <div class="stat-num" id="stat-approved">—</div>
+        </div>
+        <div class="stat-card rejected">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-num" id="stat-rejected">—</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <h2>Payment Requests</h2>
+        <button class="filter-btn active" data-status="under_review" onclick="setFilter(this)">Under Review</button>
+        <button class="filter-btn" data-status="pending"      onclick="setFilter(this)">Pending</button>
+        <button class="filter-btn" data-status="approved"     onclick="setFilter(this)">Approved</button>
+        <button class="filter-btn" data-status="rejected"     onclick="setFilter(this)">Rejected</button>
+        <button class="filter-btn" data-status="all"          onclick="setFilter(this)">All</button>
+        <button class="refresh-btn" onclick="loadPayments()">↻ Refresh</button>
+      </div>
+
+      <!-- Payments list -->
+      <div id="payments-container">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading payments...</p>
+        </div>
+      </div>
+
+    </div><!-- .container -->
+  </div><!-- #dashboard -->
+
+  <!-- Lightbox -->
+  <div id="lightbox" onclick="closeLightbox()">
+    <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightbox-img" src="" alt="Payment proof" onclick="event.stopPropagation()" />
+  </div>
+
+  <!-- Reject reason modal -->
+  <div id="reject-modal">
+    <div class="modal-box">
+      <h3>Reject Payment</h3>
+      <p>Optionally provide a reason for rejection:</p>
+      <input class="modal-input" type="text" id="reject-reason"
+             placeholder="e.g. Screenshot unclear, amount mismatch..." />
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeRejectModal()">Cancel</button>
+        <button class="modal-confirm" onclick="confirmReject()">Reject Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    // ─── Config ─────────────────────────────────────────────
+    const API_BASE = 'https://your-backend.up.railway.app'; // ← CHANGE THIS
+
+    let adminPassword = '';
+    let currentFilter = 'under_review';
+    let rejectingId   = null;
+
+    // ─── Auth ────────────────────────────────────────────────
+    function login() {
+      const pw = document.getElementById('password-input').value;
+      if (!pw) {
+        document.getElementById('login-error').textContent = 'Password required';
+        return;
+      }
+      adminPassword = pw;
+      document.getElementById('login-error').textContent = '';
+      // Test credentials by fetching stats
+      fetchStats().then(ok => {
+        if (ok) {
+          document.getElementById('login-screen').style.display = 'none';
+          document.getElementById('dashboard').classList.add('visible');
+          loadPayments();
+        } else {
+          document.getElementById('login-error').textContent = 'Invalid password';
+          adminPassword = '';
+        }
+      });
+    }
+
+    function logout() {
+      adminPassword = '';
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('dashboard').classList.remove('visible');
+      document.getElementById('password-input').value = '';
+    }
+
+    // ─── Stats ───────────────────────────────────────────────
+    async function fetchStats() {
+      try {
+        const res  = await fetch(`${API_BASE}/admin/stats`, {
+          headers: { Authorization: `Bearer ${adminPassword}` },
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) return false;
+
+        const s = json.stats;
+        const total = (s.pending||0) + (s.under_review||0) + (s.approved||0) + (s.rejected||0);
+        document.getElementById('stat-total').textContent    = total;
+        document.getElementById('stat-review').textContent   = s.under_review || 0;
+        document.getElementById('stat-approved').textContent = s.approved || 0;
+        document.getElementById('stat-rejected').textContent = s.rejected || 0;
+
+        const reviewCount = s.under_review || 0;
+        document.getElementById('pending-count').textContent =
+          reviewCount > 0 ? `${reviewCount} needs review` : 'All clear';
+
+        return true;
+      } catch { return false; }
+    }
+
+    // ─── Load Payments ───────────────────────────────────────
+    async function loadPayments() {
+      const container = document.getElementById('payments-container');
+      container.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading...</p></div>`;
+
+      fetchStats();
+
+      try {
+        const res  = await fetch(`${API_BASE}/admin/payments?status=${currentFilter}`, {
+          headers: { Authorization: `Bearer ${adminPassword}` },
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error);
+
+        renderPayments(json.payments);
+      } catch (err) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">⚠️</div>
+            <p>Failed to load: ${err.message}</p>
+          </div>`;
+      }
+    }
+
+    function setFilter(btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.status;
+      loadPayments();
+    }
+
+    // ─── Render ──────────────────────────────────────────────
+    function renderPayments(payments) {
+      const container = document.getElementById('payments-container');
+      if (!payments || payments.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🎉</div>
+            <p>No payments with this status</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      const list = document.createElement('div');
+      list.className = 'payments-list';
+
+      payments.forEach(p => {
+        const card = buildPaymentCard(p);
+        list.appendChild(card);
+      });
+
+      container.appendChild(list);
+    }
+
+    function buildPaymentCard(p) {
+      const div = document.createElement('div');
+      div.className = `payment-card ${p.status}`;
+      div.id = `card-${p.id}`;
+
+      const date = new Date(p.created_at).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+
+      const canAct = p.status === 'under_review' || p.status === 'pending';
+
+      div.innerHTML = `
+        <div class="payment-header">
+          <div>
+            <div class="payment-ref">${p.reference}</div>
+            <div class="payment-time">${date}</div>
+          </div>
+          <span class="status-pill ${p.status}">${formatStatus(p.status)}</span>
+        </div>
+        <div class="payment-body">
+          <div>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Customer Name</label>
+                <span>${p.name || '—'}</span>
+              </div>
+              <div class="info-item">
+                <label>Amount</label>
+                <span>$${p.amount} ${p.currency}</span>
+              </div>
+              <div class="info-item">
+                <label>Last 4 Digits</label>
+                <span>${p.last4digits ? `****${p.last4digits}` : '—'}</span>
+              </div>
+              <div class="info-item">
+                <label>Transfer Time</label>
+                <span>${p.transfer_time || '—'}</span>
+              </div>
+              <div class="info-item">
+                <label>User ID</label>
+                <span style="font-size:11px;color:var(--muted)">${p.user_id}</span>
+              </div>
+              <div class="info-item">
+                <label>Payment ID</label>
+                <span style="font-size:11px;color:var(--muted)">${p.id.slice(0,8)}…</span>
+              </div>
+            </div>
+            ${canAct ? `
+            <div class="actions">
+              <button class="btn-approve" id="approve-${p.id}" onclick="approvePayment('${p.id}')">
+                ✓ Approve
+              </button>
+              <button class="btn-reject" id="reject-${p.id}" onclick="openRejectModal('${p.id}')">
+                ✕ Reject
+              </button>
+            </div>` : p.rejection_reason ? `
+            <div style="margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border-radius:8px;">
+              <span style="font-size:11px;color:var(--danger);font-weight:600;">REJECTION REASON:</span>
+              <p style="font-size:13px;margin-top:4px;">${p.rejection_reason}</p>
+            </div>` : ''}
+          </div>
+          ${p.proof_image_url ? `
+          <div class="screenshot-wrap">
+            <img src="${p.proof_image_url}" alt="Payment proof"
+                 onclick="openLightbox('${p.proof_image_url}')"
+                 loading="lazy" />
+            <div class="view-label">Click to enlarge</div>
+          </div>` : `
+          <div style="background:var(--surface2);border-radius:8px;padding:20px;text-align:center;color:var(--muted);font-size:12px;">
+            No screenshot
+          </div>`}
+        </div>
+      `;
+
+      return div;
+    }
+
+    function formatStatus(s) {
+      const map = {
+        pending: '⬤ Pending',
+        under_review: '⏳ Under Review',
+        approved: '✓ Approved',
+        rejected: '✕ Rejected',
+      };
+      return map[s] || s;
+    }
+
+    // ─── Approve ──────────────────────────────────────────────
+    async function approvePayment(payment_id) {
+      const approveBtn = document.getElementById(`approve-${payment_id}`);
+      const rejectBtn  = document.getElementById(`reject-${payment_id}`);
+      approveBtn.disabled = true; rejectBtn.disabled = true;
+      approveBtn.textContent = 'Approving...';
+
+      try {
+        const res  = await fetch(`${API_BASE}/admin/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminPassword}`,
+          },
+          body: JSON.stringify({ payment_id }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error);
+
+        toast('✅ Payment approved! Subscription activated.', 'success');
+        setTimeout(loadPayments, 800);
+      } catch (err) {
+        toast('Error: ' + err.message, 'error');
+        approveBtn.disabled = false; rejectBtn.disabled = false;
+        approveBtn.textContent = '✓ Approve';
+      }
+    }
+
+    // ─── Reject modal ─────────────────────────────────────────
+    function openRejectModal(payment_id) {
+      rejectingId = payment_id;
+      document.getElementById('reject-reason').value = '';
+      document.getElementById('reject-modal').classList.add('open');
+    }
+
+    function closeRejectModal() {
+      document.getElementById('reject-modal').classList.remove('open');
+      rejectingId = null;
+    }
+
+    async function confirmReject() {
+      if (!rejectingId) return;
+      const reason = document.getElementById('reject-reason').value.trim();
+      closeRejectModal();
+
+      const rejectBtn  = document.getElementById(`reject-${rejectingId}`);
+      const approveBtn = document.getElementById(`approve-${rejectingId}`);
+      if (rejectBtn)  { rejectBtn.disabled = true; rejectBtn.textContent = 'Rejecting...'; }
+      if (approveBtn) { approveBtn.disabled = true; }
+
+      try {
+        const res  = await fetch(`${API_BASE}/admin/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminPassword}`,
+          },
+          body: JSON.stringify({ payment_id: rejectingId, reason }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error);
+
+        toast('Payment rejected.', 'success');
+        setTimeout(loadPayments, 800);
+      } catch (err) {
+        toast('Error: ' + err.message, 'error');
+        if (rejectBtn)  { rejectBtn.disabled = false; rejectBtn.textContent = '✕ Reject'; }
+        if (approveBtn) { approveBtn.disabled = false; }
+      }
+    }
+
+    // ─── Lightbox ─────────────────────────────────────────────
+    function openLightbox(url) {
+      document.getElementById('lightbox-img').src = url;
+      document.getElementById('lightbox').classList.add('open');
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    // ─── Toast ───────────────────────────────────────────────
+    let toastTimer;
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+    }
+
+    // Focus password field on load
+    document.getElementById('password-input').focus();
+
+    // Auto-refresh every 60s when dashboard is visible
+    setInterval(() => {
+      if (document.getElementById('dashboard').classList.contains('visible')) {
+        loadPayments();
+      }
+    }, 60000);
+  </script>
+</body>
+</html>

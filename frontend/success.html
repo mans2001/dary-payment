@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Dartech — Proof Submitted</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f1e; --surface: #111827; --border: #1e2d45;
+      --accent: #3b82f6; --success: #22c55e; --muted: #64748b;
+      --text: #f1f5f9;
+    }
+
+    body {
+      min-height: 100vh; background: var(--bg); color: var(--text);
+      font-family: 'Sora', system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 380px; width: 100%; text-align: center;
+    }
+
+    /* Animated checkmark */
+    .check-wrap {
+      width: 96px; height: 96px; margin: 0 auto 32px;
+      position: relative;
+    }
+    .check-circle {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: rgba(34,197,94,0.12);
+      border: 2px solid var(--success);
+      display: flex; align-items: center; justify-content: center;
+      animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes scale-in {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .check-icon {
+      font-size: 44px;
+      animation: pop-in 0.3s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes pop-in {
+      from { transform: scale(0) rotate(-20deg); }
+      to   { transform: scale(1) rotate(0); }
+    }
+
+    .title {
+      font-size: 26px; font-weight: 700; margin-bottom: 12px;
+      animation: fade-up 0.4s 0.3s ease both;
+    }
+    .subtitle {
+      font-size: 15px; color: var(--muted); line-height: 1.6;
+      margin-bottom: 32px;
+      animation: fade-up 0.4s 0.4s ease both;
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Info card */
+    .info-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+      animation: fade-up 0.4s 0.5s ease both;
+      margin-bottom: 20px;
+    }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+    }
+    .info-row + .info-row { border-top: 1px solid var(--border); }
+    .info-row-label { font-size: 12px; color: var(--muted); }
+    .info-row-value { font-size: 13px; font-weight: 600; }
+
+    /* Timeline */
+    .timeline {
+      text-align: left; margin-bottom: 28px;
+      animation: fade-up 0.4s 0.6s ease both;
+    }
+    .timeline-title {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+    .tl-item {
+      display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px;
+    }
+    .tl-dot {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .tl-dot.done    { background: rgba(34,197,94,0.15); color: var(--success); }
+    .tl-dot.current { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .tl-dot.next    { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .tl-text h4  { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .tl-text p   { font-size: 12px; color: var(--muted); }
+
+    /* Back button */
+    .back-btn {
+      display: inline-block; padding: 14px 32px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 12px; color: white; font-family: inherit;
+      font-size: 15px; font-weight: 700; text-decoration: none;
+      box-shadow: 0 4px 24px rgba(59,130,246,0.3);
+      animation: fade-up 0.4s 0.7s ease both;
+      cursor: pointer; border: none; width: 100%;
+    }
+    .back-btn:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="check-wrap">
+      <div class="check-circle">
+        <div class="check-icon">✅</div>
+      </div>
+    </div>
+
+    <h1 class="title">Proof Submitted!</h1>
+    <p class="subtitle">
+      Your payment proof has been received.<br/>
+      Our team will verify it within <strong>24 hours</strong>.
+    </p>
+
+    <div class="info-card">
+      <div class="info-row">
+        <span class="info-row-label">Reference Code</span>
+        <span class="info-row-value" id="ref-display">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Status</span>
+        <span class="info-row-value" style="color: #f59e0b;">Under Review</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Review Time</span>
+        <span class="info-row-value">Up to 24 hours</span>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-title">What happens next</div>
+
+      <div class="tl-item">
+        <div class="tl-dot done">✓</div>
+        <div class="tl-text">
+          <h4>Payment Proof Submitted</h4>
+          <p>We've received your screenshot and details</p>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot current">⏳</div>
+        <div class="tl-text">
+          <h4>Admin Verification</h4>
+          <p>Our team verifies the transfer in your account</p>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot next">🏠</div>
+        <div class="tl-text">
+          <h4>Subscription Activated</h4>
+          <p>You'll get full access to Dartech AI features</p>
+        </div>
+      </div>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← Back to Dartech App</button>
+  </div>
+
+  <script>
+    // Show the reference code from URL param
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      document.getElementById('ref-display').textContent = ref;
+    }
+
+    function goBack() {
+      // Try to close WebView / communicate with native app
+      // Customize this based on your mobile app bridge
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'PAYMENT_SUBMITTED' }));
+      } else if (window.flutter_inappwebview) {
+        window.flutter_inappwebview.callHandler('paymentSubmitted');
+      } else if (history.length > 1) {
+        history.go(-2); // Go back past checkout page
+      } else {
+        window.close();
+      }
+    }
+  </script>
+</body>
+</html>
